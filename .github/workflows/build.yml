@@ -31,61 +31,8 @@ jobs:
           name: VoiceInput-Windows
           path: dist/VoiceInput.exe
 
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-
-      - name: Build executable
-        run: |
-          pyinstaller --onefile --name "VoiceInput" server.py
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: VoiceInput-macOS
-          path: dist/VoiceInput
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-tk xdotool scrot python3-xlib xclip
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-
-      - name: Build executable
-        run: |
-          pyinstaller --onefile --name "VoiceInput" server.py
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: VoiceInput-Linux
-          path: dist/VoiceInput
-
   release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -96,16 +43,8 @@ jobs:
         with:
           path: artifacts
 
-      - name: Rename files for release
-        run: |
-          mv artifacts/VoiceInput-macOS/VoiceInput artifacts/VoiceInput-macOS/VoiceInput-macOS
-          mv artifacts/VoiceInput-Linux/VoiceInput artifacts/VoiceInput-Linux/VoiceInput-Linux
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/VoiceInput-Windows/VoiceInput.exe
-            artifacts/VoiceInput-macOS/VoiceInput-macOS
-            artifacts/VoiceInput-Linux/VoiceInput-Linux
+          files: artifacts/VoiceInput-Windows/VoiceInput.exe
           generate_release_notes: true
