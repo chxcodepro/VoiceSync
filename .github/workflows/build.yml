@@ -23,13 +23,24 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --windowed --name "VoiceInput" --icon icon.ico server.py
+          pyinstaller --onefile --windowed --name "VoiceSync" --icon icon.ico server.py
 
-      - name: Upload artifact
+      - name: Build installer
+        run: |
+          choco install innosetup -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Upload portable executable
         uses: actions/upload-artifact@v4
         with:
-          name: VoiceInput-Windows
-          path: dist/VoiceInput.exe
+          name: VoiceSync-Portable
+          path: dist/VoiceSync.exe
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoiceSync-Installer
+          path: installer_output/VoiceSync-Setup-*.exe
 
   release:
     needs: [build-windows]
@@ -46,5 +57,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/VoiceInput-Windows/VoiceInput.exe
+          files: |
+            artifacts/VoiceSync-Portable/VoiceSync.exe
+            artifacts/VoiceSync-Installer/VoiceSync-Setup-*.exe
           generate_release_notes: true

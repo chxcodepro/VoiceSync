@@ -1,4 +1,4 @@
-# 手机语音输入同步工具
+# VoiceSync - 手机语音输入同步工具
 
 通过局域网将手机上的语音输入实时同步到电脑光标位置。
 
@@ -25,7 +25,16 @@ python server.py
 
 ## 下载
 
-前往 [Releases](../../releases) 下载 Windows 可执行文件，无需安装 Python 环境。
+前往 [Releases](../../releases) 下载：
+
+- **VoiceSync-Setup-x.x.x.exe** - 安装程序（推荐）
+  - 自动创建桌面快捷方式
+  - 添加到开始菜单
+  - 支持一键卸载
+
+- **VoiceSync.exe** - 便携版
+  - 单文件可执行程序
+  - 无需安装，直接运行
 
 ## 平台支持
 
@@ -52,7 +61,7 @@ pip install -r requirements.txt
 python server.py
 
 # 构建可执行文件
-pyinstaller --onefile --windowed --name "VoiceInput" --icon icon.ico server.py
+pyinstaller --onefile --windowed --name "VoiceSync" --icon icon.ico server.py
 ```
 
-构建产物位于 `dist/VoiceInput.exe`。
+构建产物位于 `dist/VoiceSync.exe`。

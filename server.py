@@ -23,7 +23,7 @@ import qrcode
 from PIL import Image, ImageTk
 import websockets
 
-VERSION = "1.0.0"
+VERSION = "0.1.4"
 GITHUB_REPO = "chxcodepro/device_voice_input"
 
 SYSTEM = platform.system()
@@ -373,7 +373,7 @@ def _find_exe_asset(release: dict) -> dict | None:
     assets = release.get("assets") or []
     for asset in assets:
         name = (asset.get("name") or "").strip().lower()
-        if name == "voiceinput.exe":
+        if name == "voicesync.exe":
             return asset
     for asset in assets:
         name = (asset.get("name") or "").strip().lower()
@@ -450,12 +450,22 @@ def get_all_ips() -> list[tuple[str, str]]:
     except Exception:
         pass
 
+    # 获取网卡状态
+    stats = psutil.net_if_stats()
+
     for name, addrs in psutil.net_if_addrs().items():
+        # 检查网卡是否启用
+        if name in stats and not stats[name].isup:
+            continue
+
         for addr in addrs:
+            if addr.family != socket.AF_INET:
+                continue
             ip = addr.address
-            # 过滤 127.x.x.x 和 169.254.x.x (APIPA)
-            if addr.family == socket.AF_INET and not ip.startswith("127.") and not ip.startswith("169.254."):
-                result.append((name, ip))
+            # 只过滤本地回环
+            if ip.startswith("127."):
+                continue
+            result.append((name, ip))
 
     # 默认路由的 IP 排在最前面
     if default_ip:
@@ -635,7 +645,7 @@ class HttpHandler(SimpleHTTPRequestHandler):
         pass
 
 
-class VoiceInputApp:
+class VoiceSyncApp:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("语音输入")
@@ -702,7 +712,7 @@ class VoiceInputApp:
 
         asset = _find_exe_asset(release)
         if not asset:
-            messagebox.showerror("更新失败", f"未找到可下载的 VoiceInput.exe。\n\n请前往：\n{release_url}")
+            messagebox.showerror("更新失败", f"未找到可下载的 VoiceSync.exe。\n\n请前往：\n{release_url}")
             return
 
         download_url = (asset.get("browser_download_url") or "").strip()
@@ -712,8 +722,8 @@ class VoiceInputApp:
 
         target_exe = os.path.abspath(sys.executable)
         tmp_dir = tempfile.gettempdir()
-        new_exe = os.path.join(tmp_dir, f"VoiceInput-{latest_version}.exe")
-        bat_path = os.path.join(tmp_dir, f"VoiceInput-update-{os.getpid()}.bat")
+        new_exe = os.path.join(tmp_dir, f"VoiceSync-{latest_version}.exe")
+        bat_path = os.path.join(tmp_dir, f"VoiceSync-update-{os.getpid()}.bat")
 
         def progress(downloaded: int, total: int):
             if total > 0:
@@ -911,7 +921,7 @@ class VoiceInputApp:
 
 
 def main():
-    app = VoiceInputApp()
+    app = VoiceSyncApp()
     app.run()
 
 
