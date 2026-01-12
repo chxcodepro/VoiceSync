@@ -96,11 +96,16 @@ jobs:
         with:
           path: artifacts
 
+      - name: Rename files for release
+        run: |
+          mv artifacts/VoiceInput-macOS/VoiceInput artifacts/VoiceInput-macOS/VoiceInput-macOS
+          mv artifacts/VoiceInput-Linux/VoiceInput artifacts/VoiceInput-Linux/VoiceInput-Linux
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/VoiceInput-Windows/VoiceInput.exe
-            artifacts/VoiceInput-macOS/VoiceInput
-            artifacts/VoiceInput-Linux/VoiceInput
+            artifacts/VoiceInput-macOS/VoiceInput-macOS
+            artifacts/VoiceInput-Linux/VoiceInput-Linux
           generate_release_notes: true
