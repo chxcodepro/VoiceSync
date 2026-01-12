@@ -28,25 +28,8 @@ jobs:
       - name: Build installer
         run: |
           choco install innosetup -y
-          Set-Location $env:GITHUB_WORKSPACE
-          if (!(Test-Path "installer.iss")) { throw "installer.iss not found" }
-          if (!(Test-Path "dist\VoiceSync.exe")) { throw "dist\VoiceSync.exe not found" }
-          if (!(Test-Path "icon.ico")) { throw "icon.ico not found" }
-          if (!(Test-Path "README.md")) { throw "README.md not found" }
-          if (!(Test-Path "LICENSE")) { throw "LICENSE not found" }
-          $langFile = "$env:ProgramFiles(x86)\Inno Setup 6\Languages\ChineseSimplified.isl"
-          if (!(Test-Path $langFile)) {
-            Write-Warning "ChineseSimplified.isl not found, using Default.isl"
-            (Get-Content installer.iss -Raw -Encoding UTF8) -replace 'ChineseSimplified', 'Default' | Set-Content installer.iss -Encoding UTF8 -NoNewline
-          }
           $env:Path += ";$env:ProgramFiles(x86)\Inno Setup 6"
-          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
-          if (!$iscc) {
-            $fallback = "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
-            if (!(Test-Path $fallback)) { throw "ISCC.exe not found at $fallback" }
-            $iscc = $fallback
-          }
-          & $iscc "installer.iss"
+          iscc installer.iss
 
       - name: Upload portable executable
         uses: actions/upload-artifact@v4
