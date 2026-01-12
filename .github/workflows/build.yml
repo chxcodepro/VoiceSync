@@ -28,7 +28,16 @@ jobs:
       - name: Build installer
         run: |
           choco install innosetup -y
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          if (!(Test-Path "installer.iss")) { throw "installer.iss not found" }
+          if (!(Test-Path "dist\VoiceSync.exe")) { throw "dist\VoiceSync.exe not found" }
+          $env:Path += ";$env:ProgramFiles(x86)\Inno Setup 6"
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+          if (!$iscc) {
+            $fallback = "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
+            if (!(Test-Path $fallback)) { throw "ISCC.exe not found at $fallback" }
+            $iscc = $fallback
+          }
+          & $iscc "$env:GITHUB_WORKSPACE\installer.iss"
 
       - name: Upload portable executable
         uses: actions/upload-artifact@v4
