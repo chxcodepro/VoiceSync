@@ -24,15 +24,11 @@ python server.py
 
 ## 下载
 
-前往 [Releases](../../releases) 下载对应平台的可执行文件，无需安装 Python 环境。
+前往 [Releases](../../releases) 下载 Windows 可执行文件，无需安装 Python 环境。
 
 ## 平台支持
 
-| 平台 | 额外依赖 |
-|------|----------|
-| Windows | 无 |
-| macOS | 无 |
-| Linux | xdotool (`sudo apt install xdotool`) |
+仅支持 Windows 平台。
 
 ## 技术栈
 

@@ -1,5 +1,6 @@
-.idea/
-.claude/
+.idea
+.claude
+.claude/*.json
 __pycache__/
 dist/
 build/
@@ -8,3 +9,6 @@ build/
 *.pyo
 package-lock.json
 CLAUDE.md
+.codex-session
+.gemini-session
+.opencode-session
