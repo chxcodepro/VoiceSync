@@ -23,7 +23,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --windowed --name "VoiceInput" --icon NONE server.py
+          pyinstaller --onefile --windowed --name "VoiceInput" --icon icon.ico server.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

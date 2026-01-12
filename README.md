@@ -9,6 +9,7 @@
 - 自动识别终端，使用正确的粘贴快捷键
 - 窗口切换检测，支持多窗口输入
 - 多网卡支持，可选择连接的网络
+- 自动检测更新，一键升级到最新版本
 
 ## 使用方法
 
@@ -32,4 +33,26 @@ python server.py
 
 ## 技术栈
 
-Python 3.11+ / tkinter / WebSocket / HTTP Server
+- **核心**: Python 3.11+
+- **GUI**: tkinter
+- **通信**: WebSocket (websockets) + HTTP Server
+- **依赖**: pyautogui, pyperclip, qrcode, Pillow, psutil, pywin32
+
+## 开发
+
+```bash
+# 克隆项目
+git clone https://github.com/chxcodepro/device_voice_input.git
+cd device_voice_input
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行
+python server.py
+
+# 构建可执行文件
+pyinstaller --onefile --windowed --name "VoiceInput" --icon icon.ico server.py
+```
+
+构建产物位于 `dist/VoiceInput.exe`。
