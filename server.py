@@ -23,7 +23,7 @@ import qrcode
 from PIL import Image, ImageTk
 import websockets
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 GITHUB_REPO = "chxcodepro/device_voice_input"
 
 SYSTEM = platform.system()
@@ -299,13 +299,14 @@ HTML_PAGE = """<!DOCTYPE html>
 
         inputEl.addEventListener('input', () => {
             clearTimeout(sendTimer);
-            sendTimer = setTimeout(processChange, 600);
+            sendTimer = setTimeout(processChange, 400);
         });
 
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
             syncedText = '';
             syncedCursor = 0;
+            windowSwitchSyncedText = '';
         });
 
         newConvBtn.addEventListener('click', () => {
@@ -382,7 +383,7 @@ def _find_exe_asset(release: dict) -> dict | None:
     return None
 
 
-def _download_file(url: str, dest_path: str, progress_cb=None, timeout_s: float = 15.0):
+def _download_file(url: str, dest_path: str, progress_cb=None, timeout_s: float = 60.0):
     req = urllib.request.Request(
         url,
         headers={
@@ -424,6 +425,7 @@ move /Y "%NEWFILE%" "%TARGET%" >NUL
 if errorlevel 1 (
   echo Update failed: cannot replace "%TARGET%".
   echo Please download the latest version from GitHub Releases.
+  del "%NEWFILE%" >NUL 2>&1
   pause
   exit /b 1
 )
@@ -738,9 +740,20 @@ class VoiceSyncApp:
                 _download_file(download_url, new_exe, progress_cb=progress)
                 if not os.path.exists(new_exe) or os.path.getsize(new_exe) <= 0:
                     raise RuntimeError("downloaded file is empty")
+                # 校验PE文件头
+                with open(new_exe, "rb") as f:
+                    header = f.read(2)
+                    if header != b"MZ":
+                        raise RuntimeError("invalid PE file")
             except Exception:
+                # 清理临时文件
+                if os.path.exists(new_exe):
+                    try:
+                        os.remove(new_exe)
+                    except Exception:
+                        pass
                 self.root.after(0, lambda: messagebox.showerror("下载失败", f"下载更新失败，请手动更新：\n{release_url}"))
-                self.root.after(0, lambda: self.status_var.set("等待连接..."))
+                self.root.after(0, lambda: self._update_status())
                 return
 
             try:
@@ -751,8 +764,14 @@ class VoiceSyncApp:
                     creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
                 )
             except Exception:
+                # 清理临时文件
+                if os.path.exists(new_exe):
+                    try:
+                        os.remove(new_exe)
+                    except Exception:
+                        pass
                 self.root.after(0, lambda: messagebox.showerror("更新失败", f"无法启动更新脚本，请手动更新：\n{release_url}"))
-                self.root.after(0, lambda: self.status_var.set("等待连接..."))
+                self.root.after(0, lambda: self._update_status())
                 return
 
             os._exit(0)
@@ -884,15 +903,12 @@ class VoiceSyncApp:
                     'success': success
                 }))
 
-            elif msg_type == 'insert':
-                if self.last_window_handle is None:
-                    self.last_window_handle = get_window_handle()
-                type_text(data.get('text', ''))
-
             elif msg_type == 'delete':
                 if self.last_window_handle:
-                    activate_window(self.last_window_handle)
-                    time.sleep(0.1)
+                    current_handle = get_window_handle()
+                    if current_handle != self.last_window_handle:
+                        activate_window(self.last_window_handle)
+                        time.sleep(0.1)
                 delete_text(data.get('count', 0))
 
         except json.JSONDecodeError:
