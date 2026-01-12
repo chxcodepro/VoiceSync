@@ -6,3 +6,5 @@ build/
 *.spec
 *.pyc
 *.pyo
+package-lock.json
+CLAUDE.md

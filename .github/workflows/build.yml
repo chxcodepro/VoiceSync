@@ -47,21 +47,13 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --windowed --name "VoiceInput" server.py
+          pyinstaller --onefile --name "VoiceInput" server.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: VoiceInput-macOS
-          path: dist/VoiceInput.app
-          if-no-files-found: warn
-
-      - name: Upload binary if no app bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: VoiceInput-macOS-bin
           path: dist/VoiceInput
-          if-no-files-found: ignore
 
   build-linux:
     runs-on: ubuntu-latest
@@ -76,7 +68,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk xdotool
+          sudo apt-get install -y python3-tk xdotool scrot python3-xlib xclip
 
       - name: Install dependencies
         run: |
@@ -109,6 +101,6 @@ jobs:
         with:
           files: |
             artifacts/VoiceInput-Windows/VoiceInput.exe
-            artifacts/VoiceInput-macOS*/VoiceInput*
+            artifacts/VoiceInput-macOS/VoiceInput
             artifacts/VoiceInput-Linux/VoiceInput
           generate_release_notes: true
