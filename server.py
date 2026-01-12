@@ -3,21 +3,28 @@
 import asyncio
 import io
 import json
+import os
 import platform
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import tkinter as tk
+import urllib.error
+import urllib.request
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 import pyautogui
 import pyperclip
 import qrcode
 from PIL import Image, ImageTk
 import websockets
+
+VERSION = "1.0.0"
+GITHUB_REPO = "chxcodepro/device_voice_input"
 
 SYSTEM = platform.system()
 
@@ -315,6 +322,119 @@ HTML_PAGE = """<!DOCTYPE html>
 </html>"""
 
 
+def _parse_semver(version: str) -> tuple[int, int, int] | None:
+    version = (version or "").strip().lstrip("v").strip()
+    parts = version.split(".")
+    if len(parts) != 3:
+        return None
+    try:
+        major, minor, patch = (int(p) for p in parts)
+    except ValueError:
+        return None
+    return major, minor, patch
+
+
+def _is_newer_version(latest: str, current: str) -> bool:
+    latest_parsed = _parse_semver(latest)
+    current_parsed = _parse_semver(current)
+    if latest_parsed is None or current_parsed is None:
+        return (latest or "").strip() != (current or "").strip()
+    return latest_parsed > current_parsed
+
+
+def _fetch_latest_release(repo: str, timeout_s: float = 3.5) -> dict | None:
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": f"device_voice_input/{VERSION}",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            if resp.status != 200:
+                return None
+            data = resp.read().decode("utf-8", errors="replace")
+            return json.loads(data)
+    except urllib.error.HTTPError as e:
+        try:
+            if e.code == 403 and e.headers.get("X-RateLimit-Remaining") == "0":
+                return None
+        except Exception:
+            return None
+        return None
+    except Exception:
+        return None
+
+
+def _find_exe_asset(release: dict) -> dict | None:
+    assets = release.get("assets") or []
+    for asset in assets:
+        name = (asset.get("name") or "").strip().lower()
+        if name == "voiceinput.exe":
+            return asset
+    for asset in assets:
+        name = (asset.get("name") or "").strip().lower()
+        if name.endswith(".exe"):
+            return asset
+    return None
+
+
+def _download_file(url: str, dest_path: str, progress_cb=None, timeout_s: float = 15.0):
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/octet-stream",
+            "User-Agent": f"device_voice_input/{VERSION}",
+        },
+        method="GET",
+    )
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp, open(dest_path, "wb") as f:
+        total = resp.headers.get("Content-Length")
+        total_size = int(total) if total and total.isdigit() else 0
+        downloaded = 0
+        while True:
+            chunk = resp.read(1024 * 256)
+            if not chunk:
+                break
+            f.write(chunk)
+            downloaded += len(chunk)
+            if progress_cb:
+                progress_cb(downloaded, total_size)
+
+
+def _write_update_bat(bat_path: str, pid: int, target_exe: str, new_exe: str):
+    content = rf"""@echo off
+setlocal enableextensions
+
+set "PID={pid}"
+set "TARGET={target_exe}"
+set "NEWFILE={new_exe}"
+
+:wait
+tasklist /FI "PID eq %PID%" 2>NUL | find "%PID%" >NUL
+if not errorlevel 1 (
+  timeout /t 1 /nobreak >NUL
+  goto wait
+)
+
+move /Y "%NEWFILE%" "%TARGET%" >NUL
+if errorlevel 1 (
+  echo Update failed: cannot replace "%TARGET%".
+  echo Please download the latest version from GitHub Releases.
+  pause
+  exit /b 1
+)
+
+start "" "%TARGET%"
+del "%~f0" >NUL 2>&1
+"""
+    with open(bat_path, "w", encoding="utf-8", newline="\r\n") as f:
+        f.write(content)
+
+
 def get_all_ips() -> list[tuple[str, str]]:
     """获取所有网卡的 IP 地址，返回 [(name, ip), ...]"""
     import psutil
@@ -536,6 +656,98 @@ class VoiceInputApp:
         self._start_servers()
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._start_update_check()
+
+    def _start_update_check(self):
+        if SYSTEM != "Windows":
+            return
+        threading.Thread(target=self._check_updates_on_startup, daemon=True).start()
+
+    def _check_updates_on_startup(self):
+        release = _fetch_latest_release(GITHUB_REPO)
+        if not release:
+            return
+
+        tag_name = (release.get("tag_name") or "").strip()
+        latest_version = tag_name.lstrip("v").strip()
+        if not latest_version:
+            return
+
+        if not _is_newer_version(latest_version, VERSION):
+            return
+
+        body = (release.get("body") or "").strip()
+        snippet = body[:200] if body else "(无)"
+        release_url = (release.get("html_url") or "").strip() or f"https://github.com/{GITHUB_REPO}/releases/latest"
+
+        def prompt():
+            msg = (
+                f"发现新版本，是否更新？\n\n"
+                f"当前版本：{VERSION}\n"
+                f"最新版本：{latest_version}\n\n"
+                f"更新说明（节选）：\n{snippet}"
+            )
+            if messagebox.askyesno("发现更新", msg):
+                self._start_update_flow(release, latest_version, release_url)
+
+        self.root.after(0, prompt)
+
+    def _start_update_flow(self, release: dict, latest_version: str, release_url: str):
+        if not getattr(sys, "frozen", False):
+            messagebox.showinfo(
+                "手动更新",
+                f"当前为源码运行模式，无法自动替换可执行文件。\n\n请前往：\n{release_url}",
+            )
+            return
+
+        asset = _find_exe_asset(release)
+        if not asset:
+            messagebox.showerror("更新失败", f"未找到可下载的 VoiceInput.exe。\n\n请前往：\n{release_url}")
+            return
+
+        download_url = (asset.get("browser_download_url") or "").strip()
+        if not download_url:
+            messagebox.showerror("更新失败", f"下载链接缺失。\n\n请前往：\n{release_url}")
+            return
+
+        target_exe = os.path.abspath(sys.executable)
+        tmp_dir = tempfile.gettempdir()
+        new_exe = os.path.join(tmp_dir, f"VoiceInput-{latest_version}.exe")
+        bat_path = os.path.join(tmp_dir, f"VoiceInput-update-{os.getpid()}.bat")
+
+        def progress(downloaded: int, total: int):
+            if total > 0:
+                percent = int(downloaded * 100 / total)
+                text = f"正在下载更新... {percent}%"
+            else:
+                text = f"正在下载更新... {downloaded // 1024} KB"
+            self.root.after(0, lambda: self.status_var.set(text))
+
+        def run():
+            try:
+                _download_file(download_url, new_exe, progress_cb=progress)
+                if not os.path.exists(new_exe) or os.path.getsize(new_exe) <= 0:
+                    raise RuntimeError("downloaded file is empty")
+            except Exception:
+                self.root.after(0, lambda: messagebox.showerror("下载失败", f"下载更新失败，请手动更新：\n{release_url}"))
+                self.root.after(0, lambda: self.status_var.set("等待连接..."))
+                return
+
+            try:
+                _write_update_bat(bat_path, os.getpid(), target_exe, new_exe)
+                subprocess.Popen(
+                    ["cmd.exe", "/c", bat_path],
+                    cwd=tmp_dir,
+                    creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
+                )
+            except Exception:
+                self.root.after(0, lambda: messagebox.showerror("更新失败", f"无法启动更新脚本，请手动更新：\n{release_url}"))
+                self.root.after(0, lambda: self.status_var.set("等待连接..."))
+                return
+
+            os._exit(0)
+
+        threading.Thread(target=run, daemon=True).start()
 
     def _get_current_url(self) -> str:
         _, ip = self.all_ips[self.current_ip_index]
