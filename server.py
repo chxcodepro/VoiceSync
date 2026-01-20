@@ -40,85 +40,83 @@ HTML_PAGE = """<!DOCTYPE html>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow: hidden; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+            background: #F2F2F7;
             display: flex;
             flex-direction: column;
-            padding: 16px;
+            padding: 20px;
         }
         .status {
             text-align: center;
-            padding: 12px 16px;
-            border-radius: 12px;
+            padding: 10px 16px;
+            border-radius: 10px;
             margin-bottom: 16px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             flex-shrink: 0;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            letter-spacing: -0.08px;
         }
         .status.connected {
-            background: rgba(72, 187, 120, 0.9);
+            background: #34C759;
             color: white;
-            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
         }
         .status.disconnected {
-            background: rgba(245, 101, 101, 0.9);
+            background: #FF3B30;
             color: white;
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            50% { opacity: 0.8; }
         }
         textarea {
             flex: 1;
             width: 100%;
             padding: 16px;
             font-size: 17px;
-            line-height: 1.5;
+            line-height: 1.47;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             resize: none;
             outline: none;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.3s ease;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: box-shadow 0.2s ease;
+            letter-spacing: -0.41px;
         }
         textarea:focus {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
         }
-        textarea::placeholder { color: #a0aec0; }
+        textarea::placeholder { color: #8E8E93; }
         .btn-group {
             display: flex;
             gap: 12px;
-            margin-top: 12px;
+            margin-top: 16px;
             flex-shrink: 0;
         }
         .btn {
             flex: 1;
-            padding: 14px;
-            font-size: 15px;
-            font-weight: 500;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
+            padding: 13px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
             transition: all 0.2s ease;
             cursor: pointer;
+            letter-spacing: -0.41px;
         }
         .btn:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
+            opacity: 0.8;
         }
         .btn-send {
-            background: rgba(72, 187, 120, 0.9);
+            background: #007AFF;
             color: white;
         }
         .btn-clear {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        .btn-clear:active {
-            background: rgba(255, 255, 255, 0.3);
+            background: #E5E5EA;
+            color: #000;
         }
         .modal-overlay {
             position: fixed;
@@ -126,68 +124,74 @@ HTML_PAGE = """<!DOCTYPE html>
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.4);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.25s ease;
+            transition: opacity 0.3s ease;
         }
         .modal-overlay.show {
             opacity: 1;
             visibility: visible;
         }
         .modal {
-            background: white;
-            padding: 28px 24px;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            padding: 24px;
+            border-radius: 14px;
             width: 90%;
-            max-width: 320px;
+            max-width: 300px;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            transform: scale(0.9) translateY(20px);
-            transition: transform 0.25s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
         }
         .modal-overlay.show .modal {
-            transform: scale(1) translateY(0);
+            transform: scale(1);
         }
         .modal h3 {
-            margin-bottom: 8px;
-            font-size: 18px;
+            margin-bottom: 6px;
+            font-size: 17px;
             font-weight: 600;
-            color: #1a202c;
+            color: #000;
+            letter-spacing: -0.41px;
         }
         .modal p {
-            margin-bottom: 24px;
-            font-size: 14px;
-            color: #718096;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #8E8E93;
+            letter-spacing: -0.08px;
         }
         .modal-btns {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            gap: 10px;
         }
         .modal-btn {
-            flex: 1;
-            padding: 14px;
-            font-size: 15px;
-            font-weight: 500;
+            width: 100%;
+            padding: 13px;
+            font-size: 17px;
+            font-weight: 600;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
+            letter-spacing: -0.41px;
         }
-        .modal-btn:active { transform: scale(0.96); }
+        .modal-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
         .modal-btn.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #007AFF;
             color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         .modal-btn.secondary {
-            background: #edf2f7;
-            color: #4a5568;
+            background: #E5E5EA;
+            color: #000;
         }
     </style>
 </head>
@@ -711,9 +715,9 @@ class HttpHandler(SimpleHTTPRequestHandler):
 class VoiceSyncApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("语音输入")
+        self.root.title("VoiceSync")
         self.root.resizable(False, False)
-        self.root.configure(bg='#f8f9fa')
+        self.root.configure(bg='#F5F5F7')
 
         self.port_http = find_available_port(8765)
         self.port_ws = self.port_http + 1
@@ -848,23 +852,23 @@ class VoiceSyncApp:
 
     def _setup_ui(self):
         style = ttk.Style()
-        style.configure('Title.TLabel', font=('Segoe UI', 16, 'bold'), background='#f8f9fa', foreground='#1a202c')
-        style.configure('Url.TLabel', font=('Consolas', 11), background='#f8f9fa', foreground='#667eea')
-        style.configure('Status.TLabel', font=('Segoe UI', 12), background='#f8f9fa')
-        style.configure('Main.TFrame', background='#f8f9fa')
+        style.configure('Title.TLabel', font=('SF Pro Display', 20, 'bold'), background='#F5F5F7', foreground='#1D1D1F')
+        style.configure('Url.TLabel', font=('SF Mono', 11), background='#F5F5F7', foreground='#007AFF')
+        style.configure('Status.TLabel', font=('SF Pro Text', 13), background='#F5F5F7')
+        style.configure('Main.TFrame', background='#F5F5F7')
         style.configure('QR.TFrame', background='white')
 
-        main_frame = ttk.Frame(self.root, padding=30, style='Main.TFrame')
+        main_frame = ttk.Frame(self.root, padding=40, style='Main.TFrame')
         main_frame.pack()
 
-        title_label = ttk.Label(main_frame, text="手机扫码连接", style='Title.TLabel')
-        title_label.pack(pady=(0, 15))
+        title_label = ttk.Label(main_frame, text="扫码连接", style='Title.TLabel')
+        title_label.pack(pady=(0, 20))
 
         # 网卡选择下拉框
         if len(self.all_ips) > 1:
-            ip_frame = tk.Frame(main_frame, bg='#f8f9fa')
-            ip_frame.pack(pady=(0, 15))
-            tk.Label(ip_frame, text="网卡:", bg='#f8f9fa', font=('Segoe UI', 10)).pack(side=tk.LEFT)
+            ip_frame = tk.Frame(main_frame, bg='#F5F5F7')
+            ip_frame.pack(pady=(0, 20))
+            tk.Label(ip_frame, text="网卡:", bg='#F5F5F7', font=('SF Pro Text', 11), fg='#1D1D1F').pack(side=tk.LEFT)
             self.ip_var = tk.StringVar()
             ip_options = [f"{name} ({ip})" for name, ip in self.all_ips]
             self.ip_var.set(ip_options[0])
@@ -873,8 +877,8 @@ class VoiceSyncApp:
             ip_menu.pack(side=tk.LEFT, padx=(5, 0))
             ip_menu.bind('<<ComboboxSelected>>', self._on_ip_change)
 
-        self.qr_container = tk.Frame(main_frame, bg='white', padx=12, pady=12,
-                                     highlightbackground='#e2e8f0', highlightthickness=1)
+        self.qr_container = tk.Frame(main_frame, bg='white', padx=16, pady=16,
+                                     highlightbackground='#D1D1D6', highlightthickness=1)
         self.qr_container.pack()
 
         self.qr_label = tk.Label(self.qr_container, bg='white')
@@ -883,18 +887,18 @@ class VoiceSyncApp:
 
         self.url_var = tk.StringVar(value=self._get_current_url())
         url_label = ttk.Label(main_frame, textvariable=self.url_var, style='Url.TLabel')
-        url_label.pack(pady=(15, 8))
+        url_label.pack(pady=(20, 12))
 
         self.status_var = tk.StringVar(value="等待连接...")
         self.status_label = ttk.Label(main_frame, textvariable=self.status_var, style='Status.TLabel')
-        self.status_label.pack(pady=(8, 0))
+        self.status_label.pack(pady=(12, 0))
 
     def _update_qr(self):
         url = self._get_current_url()
         qr = qrcode.QRCode(box_size=7, border=1)
         qr.add_data(url)
         qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="#1a202c", back_color="white")
+        qr_img = qr.make_image(fill_color="#1D1D1F", back_color="white")
 
         img_byte_arr = io.BytesIO()
         qr_img.save(img_byte_arr, format='PNG')
@@ -984,10 +988,10 @@ class VoiceSyncApp:
     def _update_status(self):
         if self.connected_clients > 0:
             text = f"已连接 ({self.connected_clients} 台设备)"
-            color = '#48bb78'
+            color = '#34C759'
         else:
             text = "等待连接..."
-            color = '#a0aec0'
+            color = '#8E8E93'
         self.root.after(0, lambda: self._set_status(text, color))
 
     def _set_status(self, text, color):
@@ -1013,26 +1017,26 @@ class VoiceSyncApp:
     def _show_close_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("退出确认")
-        dialog.geometry("360x200")
+        dialog.geometry("340x180")
         dialog.resizable(False, False)
-        dialog.configure(bg='#f8f9fa')
+        dialog.configure(bg='#F5F5F7')
         dialog.transient(self.root)
         dialog.grab_set()
 
-        x = self.root.winfo_x() + (self.root.winfo_width() - 360) // 2
-        y = self.root.winfo_y() + (self.root.winfo_height() - 200) // 2
+        x = self.root.winfo_x() + (self.root.winfo_width() - 340) // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() - 180) // 2
         dialog.geometry(f"+{x}+{y}")
 
         result = {"action": None}
 
-        main_frame = tk.Frame(dialog, bg='#f8f9fa', padx=30, pady=20)
+        main_frame = tk.Frame(dialog, bg='#F5F5F7', padx=30, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        title = tk.Label(main_frame, text="选择操作", font=('Segoe UI', 14, 'bold'),
-                        bg='#f8f9fa', fg='#1a202c')
+        title = tk.Label(main_frame, text="选择操作", font=('SF Pro Display', 17, 'bold'),
+                        bg='#F5F5F7', fg='#1D1D1F')
         title.pack(pady=(0, 20))
 
-        btn_frame = tk.Frame(main_frame, bg='#f8f9fa')
+        btn_frame = tk.Frame(main_frame, bg='#F5F5F7')
         btn_frame.pack(pady=(0, 15))
 
         def on_minimize():
@@ -1043,20 +1047,20 @@ class VoiceSyncApp:
             result["action"] = "exit"
             dialog.destroy()
 
-        minimize_btn = tk.Button(btn_frame, text="最小化到托盘", font=('Segoe UI', 11),
-                                bg='#667eea', fg='white', relief=tk.FLAT, cursor='hand2',
-                                padx=20, pady=10, command=on_minimize)
+        minimize_btn = tk.Button(btn_frame, text="最小化到托盘", font=('SF Pro Text', 13, 'bold'),
+                                bg='#007AFF', fg='white', relief=tk.FLAT, cursor='hand2',
+                                padx=20, pady=10, command=on_minimize, bd=0)
         minimize_btn.pack(side=tk.LEFT, padx=5)
 
-        exit_btn = tk.Button(btn_frame, text="退出程序", font=('Segoe UI', 11),
-                            bg='#e53e3e', fg='white', relief=tk.FLAT, cursor='hand2',
-                            padx=20, pady=10, command=on_exit)
+        exit_btn = tk.Button(btn_frame, text="退出程序", font=('SF Pro Text', 13, 'bold'),
+                            bg='#FF3B30', fg='white', relief=tk.FLAT, cursor='hand2',
+                            padx=20, pady=10, command=on_exit, bd=0)
         exit_btn.pack(side=tk.LEFT, padx=5)
 
         skip_var = tk.BooleanVar()
         skip_check = tk.Checkbutton(main_frame, text="记住我的选择，下次不再询问",
-                                    variable=skip_var, bg='#f8f9fa', font=('Segoe UI', 9),
-                                    fg='#718096', selectcolor='#f8f9fa')
+                                    variable=skip_var, bg='#F5F5F7', font=('SF Pro Text', 11),
+                                    fg='#8E8E93', selectcolor='#F5F5F7')
         skip_check.pack()
 
         dialog.wait_window()
