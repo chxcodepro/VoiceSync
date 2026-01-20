@@ -486,6 +486,8 @@ if not errorlevel 1 (
   goto wait
 )
 
+timeout /t 2 /nobreak >NUL
+
 move /Y "%NEWFILE%" "%TARGET%" >NUL
 if errorlevel 1 (
   echo Update failed: cannot replace "%TARGET%".
