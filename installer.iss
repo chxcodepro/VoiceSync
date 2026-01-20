@@ -1,7 +1,6 @@
 ; VoiceSync 安装程序脚本
 ; 使用 Inno Setup 编译
 
-#
 #define MyAppName "VoiceSync"
 #define MyAppVersion "0.1.5"
 #define MyAppPublisher "chxcodepro"
