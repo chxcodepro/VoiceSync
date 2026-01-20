@@ -36,7 +36,7 @@ jobs:
       - name: Build executable
         run: |
           pyinstaller --onefile --windowed --name "VoiceSync" --icon icon.ico server.py
-          Move-Item dist/VoiceSync.exe dist/VoiceSync-Portable.exe
+          Copy-Item dist/VoiceSync.exe dist/VoiceSync-Portable.exe
 
       - name: Build installer
         run: |
