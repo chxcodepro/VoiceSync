@@ -551,6 +551,8 @@ setlocal enableextensions
 set "PID={pid}"
 set "TARGET={target_exe}"
 set "NEWFILE={new_exe}"
+set "MAX_RETRIES=10"
+set "RETRY_COUNT=0"
 
 :wait
 tasklist /FI "PID eq %PID%" 2>NUL | find "%PID%" >NUL
@@ -561,8 +563,14 @@ if not errorlevel 1 (
 
 timeout /t 2 /nobreak >NUL
 
-move /Y "%NEWFILE%" "%TARGET%" >NUL
+:retry
+move /Y "%NEWFILE%" "%TARGET%" >NUL 2>&1
 if errorlevel 1 (
+  set /a RETRY_COUNT+=1
+  if %RETRY_COUNT% LSS %MAX_RETRIES% (
+    timeout /t 2 /nobreak >NUL
+    goto retry
+  )
   echo Update failed: cannot replace "%TARGET%".
   echo Please download the latest version from GitHub Releases.
   del "%NEWFILE%" >NUL 2>&1
