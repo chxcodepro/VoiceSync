@@ -554,13 +554,8 @@ set "NEWFILE={new_exe}"
 set "MAX_RETRIES=10"
 set "RETRY_COUNT=0"
 
-:wait
-tasklist /FI "PID eq %PID%" 2>NUL | find "%PID%" >NUL
-if not errorlevel 1 (
-  timeout /t 1 /nobreak >NUL
-  goto wait
-)
-
+timeout /t 1 /nobreak >NUL
+taskkill /F /PID %PID% >NUL 2>&1
 timeout /t 2 /nobreak >NUL
 
 :retry
