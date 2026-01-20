@@ -46,11 +46,35 @@ HTML_PAGE = """<!DOCTYPE html>
             flex-direction: column;
             padding: 20px;
         }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .theme-toggle:active {
+            transform: scale(0.9);
+        }
         .status {
+            flex: 1;
             text-align: center;
             padding: 10px 16px;
             border-radius: 10px;
-            margin-bottom: 16px;
             font-size: 13px;
             font-weight: 600;
             flex-shrink: 0;
@@ -193,10 +217,41 @@ HTML_PAGE = """<!DOCTYPE html>
             background: #E5E5EA;
             color: #000;
         }
+        body[data-theme="dark"] {
+            background: #000000;
+        }
+        body[data-theme="dark"] .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        body[data-theme="dark"] textarea {
+            background: #1C1C1E;
+            color: #FFFFFF;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        body[data-theme="dark"] textarea::placeholder {
+            color: #636366;
+        }
+        body[data-theme="dark"] .btn-clear {
+            background: #2C2C2E;
+            color: #FFFFFF;
+        }
+        body[data-theme="dark"] .modal {
+            background: rgba(28, 28, 30, 0.95);
+        }
+        body[data-theme="dark"] .modal h3 {
+            color: #FFFFFF;
+        }
+        body[data-theme="dark"] .modal-btn.secondary {
+            background: #2C2C2E;
+            color: #FFFFFF;
+        }
     </style>
 </head>
 <body>
-    <div class="status disconnected" id="status">连接中...</div>
+    <div class="header">
+        <button class="theme-toggle" id="themeToggle">🌙</button>
+        <div class="status disconnected" id="status">连接中...</div>
+    </div>
     <textarea id="input" placeholder="点击这里，使用语音输入..."></textarea>
     <div class="btn-group">
         <button class="btn btn-send" id="sendBtn">发送</button>
@@ -215,6 +270,24 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
 
     <script>
+        // 主题切换
+        const themeToggle = document.getElementById('themeToggle');
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = savedTheme || (systemDark ? 'dark' : 'light');
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
+
+        setTheme(currentTheme);
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
         const wsUrl = `ws://${location.hostname}:${parseInt(location.port) + 1}`;
         let ws = null, sendTimer = null;
         let syncedText = '';
