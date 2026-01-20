@@ -12,6 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "Version: $version"
+
+      - name: Update version in files
+        run: |
+          (Get-Content server.py) -replace 'VERSION = ".*"', "VERSION = `"$env:VERSION`"" | Set-Content server.py
+          (Get-Content installer.iss) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$env:VERSION`"" | Set-Content installer.iss
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -24,6 +36,7 @@ jobs:
       - name: Build executable
         run: |
           pyinstaller --onefile --windowed --name "VoiceSync" --icon icon.ico server.py
+          Move-Item dist/VoiceSync.exe dist/VoiceSync-Portable.exe
 
       - name: Build installer
         run: |
@@ -35,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VoiceSync-Portable
-          path: dist/VoiceSync.exe
+          path: dist/VoiceSync-Portable.exe
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -59,6 +72,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/VoiceSync-Portable/VoiceSync.exe
+            artifacts/VoiceSync-Portable/VoiceSync-Portable.exe
             artifacts/VoiceSync-Installer/VoiceSync-Setup-*.exe
           generate_release_notes: true

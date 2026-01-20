@@ -51,8 +51,8 @@ python server.py
 
 ```bash
 # 克隆项目
-git clone https://github.com/chxcodepro/device_voice_input.git
-cd device_voice_input
+git clone https://github.com/chxcodepro/VoiceSync.git
+cd VoiceSync
 
 # 安装依赖
 pip install -r requirements.txt

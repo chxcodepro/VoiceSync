@@ -2,9 +2,9 @@
 ; 使用 Inno Setup 编译
 
 #define MyAppName "VoiceSync"
-#define MyAppVersion "0.1.3"
+#define MyAppVersion "0.1.5"
 #define MyAppPublisher "chxcodepro"
-#define MyAppURL "https://github.com/chxcodepro/device_voice_input"
+#define MyAppURL "https://github.com/chxcodepro/VoiceSync"
 #define MyAppExeName "VoiceSync.exe"
 
 [Setup]
@@ -31,7 +31,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

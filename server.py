@@ -22,9 +22,11 @@ import pyperclip
 import qrcode
 from PIL import Image, ImageTk
 import websockets
+import pystray
+from pystray import MenuItem as item
 
 VERSION = "0.1.5"
-GITHUB_REPO = "chxcodepro/device_voice_input"
+GITHUB_REPO = "chxcodepro/VoiceSync"
 
 SYSTEM = platform.system()
 
@@ -87,22 +89,35 @@ HTML_PAGE = """<!DOCTYPE html>
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(102, 126, 234, 0.5);
         }
         textarea::placeholder { color: #a0aec0; }
-        .clear-btn {
+        .btn-group {
+            display: flex;
+            gap: 12px;
             margin-top: 12px;
+            flex-shrink: 0;
+        }
+        .btn {
+            flex: 1;
             padding: 14px;
             font-size: 15px;
             font-weight: 500;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
-            flex-shrink: 0;
             backdrop-filter: blur(10px);
             transition: all 0.2s ease;
             cursor: pointer;
         }
-        .clear-btn:active {
+        .btn:active {
             transform: scale(0.97);
+        }
+        .btn-send {
+            background: rgba(72, 187, 120, 0.9);
+            color: white;
+        }
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .btn-clear:active {
             background: rgba(255, 255, 255, 0.3);
         }
         .modal-overlay {
@@ -179,7 +194,10 @@ HTML_PAGE = """<!DOCTYPE html>
 <body>
     <div class="status disconnected" id="status">连接中...</div>
     <textarea id="input" placeholder="点击这里，使用语音输入..."></textarea>
-    <button class="clear-btn" id="clearBtn">清空并开始新输入</button>
+    <div class="btn-group">
+        <button class="btn btn-send" id="sendBtn">发送</button>
+        <button class="btn btn-clear" id="clearBtn">清空</button>
+    </div>
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
@@ -206,6 +224,34 @@ HTML_PAGE = """<!DOCTYPE html>
         const modalMsg = document.getElementById('modalMsg');
         const newConvBtn = document.getElementById('newConvBtn');
         const switchBackBtn = document.getElementById('switchBackBtn');
+
+        function optimizeText(text) {
+            // 去除语气词
+            text = text.replace(/[，。、]*(嗯+|啊+|呃+|哦+|诶+)[，。、]*/g, '');
+            text = text.replace(/那个+/g, '');
+            text = text.replace(/这个+/g, '');
+            text = text.replace(/就是说+/g, '');
+            text = text.replace(/然后+/g, '然后');
+
+            // 去除重复字词
+            text = text.replace(/(.)\1{2,}/g, '$1');
+            text = text.replace(/(\\S{2,})\\1+/g, '$1');
+
+            // 常见错误词纠正
+            const corrections = {
+                '在在': '在', '的的': '的', '了了': '了',
+                '因为所以': '因为', '虽然但是': '虽然',
+                '应该应该': '应该', '可以可以': '可以'
+            };
+            for (const [wrong, right] of Object.entries(corrections)) {
+                text = text.replace(new RegExp(wrong, 'g'), right);
+            }
+
+            // 清理多余空格
+            text = text.replace(/\\s+/g, ' ').trim();
+
+            return text;
+        }
 
         function connect() {
             ws = new WebSocket(wsUrl);
@@ -248,6 +294,10 @@ HTML_PAGE = """<!DOCTYPE html>
 
         function doSend(text, newWindow) {
             if (!text) return;
+            // 自动优化文本
+            text = optimizeText(text);
+            inputEl.value = text;
+
             // 新对话时用窗口切换时记录的已同步文本计算增量
             const baseText = newWindow ? windowSwitchSyncedText : syncedText;
             const newText = text.slice(baseText.length);
@@ -255,11 +305,10 @@ HTML_PAGE = """<!DOCTYPE html>
                 send({type: 'confirm_send', text: newText, new_window: newWindow});
             }
             if (newWindow) {
-                // 新对话：清空输入框，重置状态
-                inputEl.value = '';
-                syncedText = '';
-                syncedCursor = 0;
-                inputEl.focus();
+                // 新对话：更新同步状态，但保留输入框内容
+                syncedText = text;
+                syncedCursor = inputEl.selectionStart;
+                windowSwitchSyncedText = text;
             } else {
                 syncedText = text;
                 syncedCursor = inputEl.selectionStart;
@@ -300,6 +349,18 @@ HTML_PAGE = """<!DOCTYPE html>
         inputEl.addEventListener('input', () => {
             clearTimeout(sendTimer);
             sendTimer = setTimeout(processChange, 400);
+        });
+
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                clearTimeout(sendTimer);
+                processChange();
+            }
+        });
+
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            send({type: 'press_enter'});
         });
 
         clearBtn.addEventListener('click', () => {
@@ -349,7 +410,7 @@ def _fetch_latest_release(repo: str, timeout_s: float = 3.5) -> dict | None:
         url,
         headers={
             "Accept": "application/vnd.github+json",
-            "User-Agent": f"device_voice_input/{VERSION}",
+            "User-Agent": f"VoiceSync/{VERSION}",
         },
         method="GET",
     )
@@ -388,7 +449,7 @@ def _download_file(url: str, dest_path: str, progress_cb=None, timeout_s: float 
         url,
         headers={
             "Accept": "application/octet-stream",
-            "User-Agent": f"device_voice_input/{VERSION}",
+            "User-Agent": f"VoiceSync/{VERSION}",
         },
         method="GET",
     )
@@ -663,6 +724,9 @@ class VoiceSyncApp:
         self.ws_server = None
         self.http_server = None
         self.last_window_handle = None
+        self.tray_icon = None
+        self.config_file = os.path.join(os.path.expanduser("~"), ".voicesync_config.json")
+        self.config = self._load_config()
 
         self._setup_ui()
         self._start_servers()
@@ -911,6 +975,9 @@ class VoiceSyncApp:
                         time.sleep(0.1)
                 delete_text(data.get('count', 0))
 
+            elif msg_type == 'press_enter':
+                pyautogui.press('enter')
+
         except json.JSONDecodeError:
             type_text(message)
 
@@ -927,10 +994,123 @@ class VoiceSyncApp:
         self.status_var.set(text)
         self.status_label.configure(foreground=color)
 
-    def _on_close(self):
+    def _load_config(self):
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {"default_close_action": None}
+
+    def _save_config(self):
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def _show_close_dialog(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("退出确认")
+        dialog.geometry("360x200")
+        dialog.resizable(False, False)
+        dialog.configure(bg='#f8f9fa')
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        x = self.root.winfo_x() + (self.root.winfo_width() - 360) // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() - 200) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+        result = {"action": None}
+
+        main_frame = tk.Frame(dialog, bg='#f8f9fa', padx=30, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        title = tk.Label(main_frame, text="选择操作", font=('Segoe UI', 14, 'bold'),
+                        bg='#f8f9fa', fg='#1a202c')
+        title.pack(pady=(0, 20))
+
+        btn_frame = tk.Frame(main_frame, bg='#f8f9fa')
+        btn_frame.pack(pady=(0, 15))
+
+        def on_minimize():
+            result["action"] = "minimize"
+            dialog.destroy()
+
+        def on_exit():
+            result["action"] = "exit"
+            dialog.destroy()
+
+        minimize_btn = tk.Button(btn_frame, text="最小化到托盘", font=('Segoe UI', 11),
+                                bg='#667eea', fg='white', relief=tk.FLAT, cursor='hand2',
+                                padx=20, pady=10, command=on_minimize)
+        minimize_btn.pack(side=tk.LEFT, padx=5)
+
+        exit_btn = tk.Button(btn_frame, text="退出程序", font=('Segoe UI', 11),
+                            bg='#e53e3e', fg='white', relief=tk.FLAT, cursor='hand2',
+                            padx=20, pady=10, command=on_exit)
+        exit_btn.pack(side=tk.LEFT, padx=5)
+
+        skip_var = tk.BooleanVar()
+        skip_check = tk.Checkbutton(main_frame, text="记住我的选择，下次不再询问",
+                                    variable=skip_var, bg='#f8f9fa', font=('Segoe UI', 9),
+                                    fg='#718096', selectcolor='#f8f9fa')
+        skip_check.pack()
+
+        dialog.wait_window()
+
+        if skip_var.get() and result["action"]:
+            self.config["default_close_action"] = result["action"]
+            self._save_config()
+
+        return result["action"]
+
+    def _create_tray_icon(self):
+        icon_path = "icon.ico"
+        if os.path.exists(icon_path):
+            icon_image = Image.open(icon_path)
+        else:
+            icon_image = Image.new('RGB', (64, 64), color='blue')
+
+        menu = pystray.Menu(
+            item('显示窗口', self._show_window, default=True),
+            item('退出', self._quit_app)
+        )
+        self.tray_icon = pystray.Icon("VoiceSync", icon_image, "语音输入", menu)
+        threading.Thread(target=self.tray_icon.run, daemon=True).start()
+
+    def _show_window(self):
+        def show():
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+        self.root.after(0, show)
+
+    def _quit_app(self):
+        if self.tray_icon:
+            self.tray_icon.stop()
         if self.http_server:
             self.http_server.shutdown()
-        self.root.destroy()
+        self.root.after(0, self.root.destroy)
+
+    def _on_close(self):
+        default_action = self.config.get("default_close_action")
+
+        if default_action:
+            action = default_action
+        else:
+            action = self._show_close_dialog()
+
+        if action == "minimize":
+            self.root.withdraw()
+            if not self.tray_icon:
+                self._create_tray_icon()
+        elif action == "exit":
+            if self.http_server:
+                self.http_server.shutdown()
+            self.root.destroy()
 
     def run(self):
         self.root.mainloop()
